@@ -58,7 +58,7 @@ The directory name must match the `name` field in `SKILL.md`.
 
 ## Source & attribution
 
-Part of **[rpa-skills](https://github.com/EvilFreelancer/rpa-skills)** — [Pavel Zloi](https://t.me/evilfreelancer)'s agent-skills collection (see [notes on vibe coding](https://t.me/evilfreelancer/1485)).
+Part of **[rpa-skills](https://github.com/EvilFreelancer/rpa-skills)** — [Pavel Rykov](https://t.me/evilfreelancer)'s agent-skills collection (see [notes on vibe coding](https://t.me/evilfreelancer/1485)).
 
 Packaged from the prompt collection **[cursor-vibe-prompts](https://github.com/EvilFreelancer/cursor-vibe-prompts)** — the same vibe-coding workflow, turned into a reusable skill.
 

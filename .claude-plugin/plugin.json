@@ -3,7 +3,7 @@
   "description": "Create or refresh agent project rules (Cursor .cursor/rules/*.mdc, Claude Code CLAUDE.md and .claude/rules). Layered-cake architecture + BDD-style delivery, with a mandatory Rules Sync step that mirrors changes across every agent's rule tree.",
   "version": "1.1.0",
   "author": {
-    "name": "Pavel Zloi",
+    "name": "Pavel Rykov",
     "email": "paul@drteam.rocks"
   },
   "homepage": "https://github.com/EvilFreelancer/rpa-gen-rules",
