@@ -30,16 +30,16 @@ Generated rules **must** include a mandatory **Rules Sync** step: any change to 
 
 ## Install
 
-This skill is packaged as a plugin for **Claude Code**, **Cursor**, and **OpenAI Codex**, and also installs as a plain **skill folder** (Kimi Code CLI and others).
+This skill is distributed through the **rpa-skills** catalog (a Claude Code plugin marketplace), and also installs as a plain **skill folder** (Cursor, OpenAI Codex, Kimi Code CLI, and others).
 
-**As a plugin (Claude Code):**
+**As a plugin (Claude Code)** — add the catalog once, then install this skill from it:
 
 ```text
-/plugin marketplace add EvilFreelancer/rpa-gen-rules
-/plugin install rpa-gen-rules@rpa-gen-rules
+/plugin marketplace add EvilFreelancer/rpa-skills
+/plugin install rpa-gen-rules@rpa-skills
 ```
 
-**As a plain skill folder** — copy or symlink `skills/rpa-gen-rules/` into a skill root:
+**As a plain skill folder** — copy or symlink this repository into a skill root (its `SKILL.md` lives at the repo root):
 
 | Tool          | Path                          |
 |---------------|-------------------------------|

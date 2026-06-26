@@ -19,7 +19,7 @@
     "conventions",
     "rpa"
   ],
-  "skills": "./skills/",
+  "skills": "./",
   "interface": {
     "displayName": "rpa-gen-rules",
     "shortDescription": "Generate Cursor/Claude agent rules: layered-cake + BDD, with Rules Sync.",
