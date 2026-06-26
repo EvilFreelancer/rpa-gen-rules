@@ -1,0 +1,30 @@
+{
+  "name": "rpa-gen-rules",
+  "version": "1.1.0",
+  "description": "Create or refresh agent project rules (Cursor .cursor/rules/*.mdc, Claude Code CLAUDE.md and .claude/rules). Layered-cake architecture + BDD-style delivery, with a mandatory Rules Sync step that mirrors changes across every agent's rule tree.",
+  "author": {
+    "name": "Pavel Zloi",
+    "email": "paul@drteam.rocks",
+    "url": "https://t.me/evilfreelancer"
+  },
+  "homepage": "https://github.com/EvilFreelancer/rpa-gen-rules",
+  "repository": "https://github.com/EvilFreelancer/rpa-gen-rules",
+  "license": "MIT",
+  "keywords": [
+    "rules",
+    "cursor",
+    "claude-code",
+    "agents",
+    "bdd",
+    "conventions",
+    "rpa"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "rpa-gen-rules",
+    "shortDescription": "Generate Cursor/Claude agent rules: layered-cake + BDD, with Rules Sync.",
+    "developerName": "Pavel Zloi",
+    "category": "Developer Tools",
+    "websiteURL": "https://github.com/EvilFreelancer/rpa-gen-rules"
+  }
+}
