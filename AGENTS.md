@@ -13,16 +13,13 @@ skill folder for Kimi Code CLI and others).
 ```
 rpa-gen-rules/
 ├─ .claude-plugin/
-│  ├─ plugin.json        # Claude Code plugin manifest
-│  └─ marketplace.json   # single-plugin marketplace (plugin lives at "./")
+│  └─ plugin.json        # Claude Code plugin manifest
 ├─ .cursor-plugin/
 │  └─ plugin.json        # Cursor plugin manifest
 ├─ .codex-plugin/
-│  └─ plugin.json        # Codex plugin manifest (interface block + skills: "./skills/")
-├─ skills/rpa-gen-rules/
-│  ├─ SKILL.md           # CANONICAL skill: YAML frontmatter + instructions
-│  └─ references/ | scripts/   # optional bundled assets, next to SKILL.md
-├─ SKILL.md              # COPY of skills/rpa-gen-rules/SKILL.md (display / direct-copy install)
+│  └─ plugin.json        # Codex plugin manifest (interface block + skills: "./")
+├─ SKILL.md              # CANONICAL skill: YAML frontmatter + instructions (repo root)
+├─ references/           # bundled reference material, linked from SKILL.md
 ├─ README.md             # human overview
 ├─ AGENTS.md             # this file
 └─ LICENSE
@@ -34,37 +31,27 @@ The same facts (the skill text, its `version`, its `description`) are duplicated
 skill works across platforms. **Whenever you edit one, propagate the change to every place it is mirrored —
 in the same commit.** Nothing here is allowed to drift.
 
-### 1. `SKILL.md` lives in two places — keep them byte-identical
+### 1. `SKILL.md` lives at the repo root — single canonical copy
 
-- `skills/rpa-gen-rules/SKILL.md` — **canonical**. What the Claude Code / Codex plugin loaders read, and what you
-  copy when installing into `~/.claude/skills/rpa-gen-rules/`, `~/.cursor/skills/rpa-gen-rules/`, etc.
-- `SKILL.md` (repo root) — a **copy** for GitHub display and direct-copy installs.
-
-Edit the canonical file first, then sync the root copy and verify (the `diff` must print nothing):
-
-```bash
-cp skills/rpa-gen-rules/SKILL.md SKILL.md
-diff skills/rpa-gen-rules/SKILL.md SKILL.md
-```
-
-Bundled assets (`references/`, `scripts/`, …) live **only** under `skills/rpa-gen-rules/`, next to the canonical
-`SKILL.md`, and are referenced from it by relative path. Do **not** duplicate them at the repo root.
+- `SKILL.md` (repo root) — **canonical**. The repo itself is the skill folder: copy or symlink the whole
+  repository into `~/.claude/skills/rpa-gen-rules/`, `~/.cursor/skills/rpa-gen-rules/`, etc.
+- Bundled assets (`references/`, `scripts/`, …) live next to it at the repo root and are referenced from
+  `SKILL.md` by relative path.
 
 ### 2. `version` must match in every manifest
 
 When you bump the version, update it in **all** of these:
 
-- `skills/rpa-gen-rules/SKILL.md` frontmatter — and the root `SKILL.md` copy.
+- `SKILL.md` frontmatter (repo root).
 - `.claude-plugin/plugin.json`
-- `.claude-plugin/marketplace.json` (the entry inside `plugins`)
 - `.cursor-plugin/plugin.json`
 - `.codex-plugin/plugin.json`
 
 ### 3. `description` must stay consistent across manifests
 
-The same description text appears in `SKILL.md` (root + canonical), `.claude-plugin/plugin.json`,
-`.claude-plugin/marketplace.json`, `.cursor-plugin/plugin.json`, and `.codex-plugin/plugin.json`
-(plus a shorter `interface.shortDescription` in the Codex manifest). Keep them in step.
+The same description text appears in `SKILL.md`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`,
+and `.codex-plugin/plugin.json` (plus a shorter `interface.shortDescription` in the Codex manifest).
+Keep them in step.
 
 Quick check that the version is identical everywhere:
 
@@ -94,14 +81,13 @@ Human-facing overview: purpose, when to use, usage examples, install (plugin + f
 
 ## If the skill ships code
 
-Put scripts under `skills/rpa-gen-rules/scripts/`. Add tests where it makes sense and make sure they pass before
-committing.
+Put scripts under `scripts/` at the repo root. Add tests where it makes sense and make sure they pass
+before committing.
 
 ## Commit checklist
 
-- [ ] `skills/rpa-gen-rules/SKILL.md` edited where needed.
-- [ ] Root `SKILL.md` synced — `diff skills/rpa-gen-rules/SKILL.md SKILL.md` is clean.
-- [ ] `version` bumped and identical in `SKILL.md`, `.claude-plugin/{plugin,marketplace}.json`,
+- [ ] `SKILL.md` edited where needed.
+- [ ] `version` bumped and identical in `SKILL.md`, `.claude-plugin/plugin.json`,
       `.cursor-plugin/plugin.json`, `.codex-plugin/plugin.json`.
 - [ ] `description` consistent across all manifests (and `interface.shortDescription` in Codex).
 - [ ] README updated.
