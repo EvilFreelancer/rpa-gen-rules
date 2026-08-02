@@ -10,8 +10,9 @@ Loads when editing any Python file. Align with `ruff.toml`, `pyproject.toml`, or
 ## General
 
 1. Code comments only in English unless the project says otherwise.
-2. Type hints on public functions and methods when the codebase uses them.
-3. End new files with a newline.
+2. Agent rule files (`.claude/rules/*.md`, `.cursor/rules/*.mdc`) and top-level briefs (`AGENTS.md`, `CLAUDE.md`) are written in English unless the user explicitly asks for another language; when they do, switch all rule trees at once.
+3. Type hints on public functions and methods when the codebase uses them.
+4. End new files with a newline.
 
 ## Imports
 

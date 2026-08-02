@@ -9,8 +9,9 @@ alwaysApply: true
 ## General Rules
 
 1. **Comments**: Write all code comments **ONLY in English**
-2. **User responses**: Respond in Russian unless user requests otherwise
-3. **Empty line at end of file**: Always add an empty line at the end of new files
+2. **Rules and briefs**: Write every agent rule file (`.cursor/rules/*.mdc`, `.claude/rules/*.md`) and every top-level brief (`AGENTS.md`, `CLAUDE.md`) **in English** unless the user explicitly asks for another language; when they do, switch **all** rule trees at once
+3. **User responses**: Respond in Russian unless user requests otherwise
+4. **Empty line at end of file**: Always add an empty line at the end of new files
 
 ## Code Formatting
 

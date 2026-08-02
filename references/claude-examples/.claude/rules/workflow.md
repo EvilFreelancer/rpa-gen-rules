@@ -51,7 +51,8 @@ That file describes **layers and dependencies**. For **new behavior**, this file
    - Claude `paths: ["src/**/*.py"]` <-> Cursor `globs: src/**/*.py` + `alwaysApply: true`.
    - Claude `.claude/rules/file.md` references <-> Cursor `@file.mdc` references.
    - File extension `.md` <-> `.mdc`.
-4. If `AGENTS.md` changed, verify `CLAUDE.md` resolves to the same content (`ls -la CLAUDE.md` shows a symlink to `AGENTS.md`; if not, refresh it or re-create the symlink: `ln -sf AGENTS.md CLAUDE.md`).
-5. Commit both sides together. The report must list every rule file synced.
+4. Keep the language identical across trees. Rule files and `AGENTS.md` are written in **English** unless the user asked for another language for this project.
+5. If `AGENTS.md` changed, verify `CLAUDE.md` resolves to the same content (`ls -la CLAUDE.md` shows a symlink to `AGENTS.md`; if not, refresh it or re-create the symlink: `ln -sf AGENTS.md CLAUDE.md`).
+6. Commit both sides together. The report must list every rule file synced.
 
 Skip only when the topic is genuinely tool-specific. When skipping, add a one-line comment in the file that diverges so the divergence is intentional and visible.

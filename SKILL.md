@@ -1,11 +1,12 @@
 ---
 name: rpa-gen-rules
-version: 1.1.0
+version: 1.2.0
 description: >
   Run when the user invokes /rpa-gen-rules or asks to create or refresh agent project rules (Cursor .mdc,
   Claude Code CLAUDE.md and .claude/rules). Infers from specs, docs, and code. Rules use a layered-cake model
   (implement inner layers with no dependencies first, then the next layer) and BDD-style delivery. Generated
-  rules include a mandatory Rules Sync step so changes to one agent's tree are mirrored to every other agent's
+  rules and AGENTS.md are written in English unless the user asks for another language. Generated rules
+  include a mandatory Rules Sync step so changes to one agent's tree are mirrored to every other agent's
   tree (Cursor <-> Claude <-> AGENTS.md) in the same commit. No separate user brief required.
 ---
 
@@ -18,6 +19,21 @@ Produce or update **versioned** instructions so the agent stays inside architect
 - **Layered cake** - rules must tell the agent to build **by layers**: first units that depend on nothing inside the project, then layers that depend only on lower layers, and so on. Mirror this in `architecture` and `implementation-order` style files.
 - **Cursor** - `.cursor/rules/*.mdc` ([MDC](https://github.com/nuxt-content/mdc), `globs`, `alwaysApply`, `@` links).
 - **Claude Code** - `CLAUDE.md` and `.claude/rules/*.md` with optional YAML `paths:` ([memory](https://code.claude.com/docs/en/memory#organize-rules-with-claude/rules/)).
+
+## Language of generated files: English by default
+
+Everything this skill writes into the target project is **written in English** unless the user explicitly asks for another language:
+
+- top-level briefs - `AGENTS.md`, root `CLAUDE.md`, `.claude/CLAUDE.md`, `.github/copilot-instructions.md`;
+- rule files and their frontmatter - `.cursor/rules/*.mdc`, `.claude/rules/*.md`, and any other agent tree;
+- headings, bullets, examples, and comments inside generated code snippets.
+
+Boundaries of the rule:
+
+- Chat language is a separate thing. Keep answering the user in the language they write in, and keep whatever `Respond in <language>` convention already lives in the project's `code-style` rule.
+- If the user does ask for another language, apply it to **every** tree at once. Mixed-language trees make the Rules Sync diff unreadable.
+- If the repo already has rules in another language and the user said nothing, keep that language in the files you touch, do not translate them on your own initiative, and mention the mismatch in the final report.
+- The English default also applies to later edits, so state it inside the generated `code-style` rule, not only here.
 
 ## Read these references from this skill (progressive disclosure)
 
@@ -79,7 +95,7 @@ Keep `CLAUDE.md` short. Put layered architecture and BDD workflow in topic files
 | `workflow` | BDD/TDD steps for features and bugs, final checks, `pre-commit` when used |
 | `testing` | pytest layout, naming, fixtures |
 | `architecture` | Layers, modules, allowed dependencies (supports layered cake) |
-| `code-style` | Formatter, types, comments language |
+| `code-style` | Formatter, types, language of comments and of the rule files themselves |
 | `implementation-order` | Explicit layer-by-layer order |
 | `api-layer` | If HTTP or RPC exists |
 | `core-modules` | Domain modules |
@@ -89,7 +105,8 @@ Keep `CLAUDE.md` short. Put layered architecture and BDD workflow in topic files
 - **Layered cake** in rules: forbid jumping ahead to high-level code before lower layers exist and are tested.
 - **BDD** in rules: new behavior starts with tests that describe observable outcomes.
 - **Rules sync is mandatory** (see next section): every workflow rule you generate must end with a "Rules Sync" step.
-- Ask questions only when blocked. Comments in generated code snippets: English.
+- **English by default** (see the language section above): rule bodies, `AGENTS.md`, and comments in generated code snippets are English unless the user asked for another language. Repeat the rule inside the generated `code-style` file so it survives later edits.
+- Ask questions only when blocked.
 
 ## Rules sync across agents (mandatory)
 
@@ -133,8 +150,9 @@ The generated `workflow.mdc` and `workflow.md` **must** end with a `## Rules Syn
 3. Copy the body verbatim, then adapt the frontmatter and inline link syntax:
    - Cursor `globs:` + `alwaysApply:` <-> Claude `paths:` (or omit `paths:` for always-on).
    - Cursor `@file.mdc` <-> Claude `.claude/rules/file.md`.
-4. If `AGENTS.md` changed, verify `CLAUDE.md` resolves to the same content (symlink intact, or copy refreshed).
-5. Include the synced files in the same commit. Do not leave one tree ahead of the other.
+4. Keep the language identical across trees. Rule files and `AGENTS.md` are written in English unless this project is deliberately documented in another language; never translate one tree and leave the other behind.
+5. If `AGENTS.md` changed, verify `CLAUDE.md` resolves to the same content (symlink intact, or copy refreshed).
+6. Include the synced files in the same commit. Do not leave one tree ahead of the other.
 
 Skip only when the topic is genuinely tool-specific (e.g. a Cursor `@`-context trick with no Claude equivalent). When skipping, add a one-line comment in the file that diverges.
 ```
@@ -146,4 +164,5 @@ This section is non-optional. If the project uses only one agent today, still ge
 1. Create or update rules (Cursor and Claude Code paired, plus any other agent roots the repo uses).
 2. Ensure every `workflow` rule contains the **Rules Sync** section above.
 3. Ensure top-level `AGENTS.md` exists and `CLAUDE.md` is a symlink to it (or note why not).
-4. Summarize files added or changed, how `alwaysApply` / `paths` / `globs` are set, and confirm both trees were updated in lockstep.
+4. Ensure everything written is in English unless the user asked otherwise, and that the generated `code-style` rule states this for future edits.
+5. Summarize files added or changed, how `alwaysApply` / `paths` / `globs` are set, which language the files use, and confirm both trees were updated in lockstep.

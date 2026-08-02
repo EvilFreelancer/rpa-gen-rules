@@ -16,6 +16,10 @@ See @README.md for purpose and layout. Use @pyproject.toml or @package.json for 
 - Default test command: `.venv/bin/pytest tests/ -v` (override if the project uses `uv run`, `tox`, or `nox`).
 - Before finishing a feature or bugfix, run the full suite and fix regressions.
 
+## Language
+
+Documentation for agents - this file, `AGENTS.md`, `.claude/rules/*.md`, `.cursor/rules/*.mdc` - is written in **English** unless the project owner asks for another language. Chat replies follow the user's language; only the files are fixed. If the language does change, change it in every rule tree at once so Rules Sync keeps working.
+
 ## Modular rules
 
 Long procedures live under `.claude/rules/`. Files **without** YAML `paths` load every session. Files **with** `paths` apply when Claude works on matching files. See [How Claude remembers your project - modular rules](https://code.claude.com/docs/en/memory#organize-rules-with-claude-rules).

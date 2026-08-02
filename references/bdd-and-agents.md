@@ -65,6 +65,16 @@ Copy or adapt `references/claude-examples/.claude/` into a real project root. It
 | **GitHub Copilot** | `.github/copilot-instructions.md` (or policy UI) | Keep instructions short; mirror key bullets from `workflow` and `testing`. |
 | **Generic** | `CONTRIBUTING.md`, `docs/dev-guide.md` | Humans and any agent can read these; duplicate critical agent constraints here if your team does not use Cursor or Claude.
 
+## Language: English by default
+
+Rule files and top-level briefs (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/*.mdc`, `.claude/rules/*.md`, `.github/copilot-instructions.md`) are written in **English** unless the user explicitly asks for another language. Reasons:
+
+- rule trees are mirrored across agents, and a diff between an English `.mdc` and a translated `.md` is impossible to review;
+- most agents are prompted and evaluated in English, so English rules behave more predictably;
+- contributors joining the repo later read one language, not two.
+
+This is about **files**, not about conversation. The chat stays in the user's language, and a `Respond in <language>` line inside `code-style` stays exactly as the project wants it. If the user asks for rules in another language, switch every tree at once. If the repo already carries rules in another language and the user gave no instruction, keep that language in the files you touch and report the mismatch instead of translating on your own initiative.
+
 ## Single source of truth and mandatory sync
 
 Different agents read different paths, but the **content** must stay identical. Two mechanisms keep that true:
@@ -104,8 +114,9 @@ The agent must, in the same commit / PR:
 1. Identify every rule tree present in the repo: `.cursor/rules/`, `.claude/rules/`, root `AGENTS.md` / `CLAUDE.md`, plus any `.kimi/`, `.codex/`, `.github/copilot-instructions.md`.
 2. Locate or create the counterpart of each edited file in every other tree.
 3. Copy the body verbatim; translate frontmatter and links per the table above.
-4. Confirm the `CLAUDE.md -> AGENTS.md` symlink is still valid when `AGENTS.md` changed.
-5. List every synced file in the task report.
+4. Keep both sides in the same language (English by default, see the section above).
+5. Confirm the `CLAUDE.md -> AGENTS.md` symlink is still valid when `AGENTS.md` changed.
+6. List every synced file in the task report.
 
 Drift is a bug. If one tree leads the other for more than a single commit, the agents start giving contradictory advice on the same codebase.
 
