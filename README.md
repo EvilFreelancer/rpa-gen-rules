@@ -2,13 +2,15 @@
 
 ## Purpose
 
-Create or update **agent rules** for **Cursor** (`.cursor/rules/*.mdc`) and **Claude Code** (`.claude/` with modular `rules/`). Bundled examples live under `references/`.
+Create or update **agent rules** for **Cursor** (`.cursor/rules/*.mdc`), **Claude Code** (`.claude/` with modular `rules/`), and **OpenAI Codex** (a `.codex/` hook bridge that auto-attaches Cursor rules by glob, since Codex has no native equivalent). Bundled examples live under `references/`.
 
 Rules follow a **layered-cake** idea: implement **inner layers first** (no internal project dependencies), then the next layer, and so on. They also describe **BDD-style** work (behavior driven by tests). No long user brief is required; the agent infers from the repo.
 
 Generated rules, `AGENTS.md`, and every other agent brief are written **in English** unless you explicitly ask for another language - mirrored trees are only reviewable when both sides speak the same language. The chat itself stays in your language.
 
-Generated rules **must** include a mandatory **Rules Sync** step: any change to a rule for one agent (for example a Cursor `.mdc`) has to be mirrored to every other agent's tree (Claude `.md`, root `AGENTS.md` / `CLAUDE.md`, etc.) in the **same** commit. The skill also recommends keeping `CLAUDE.md` as a symlink to `AGENTS.md` at repo root (see `getconf`, `getconf-ui`, `sdm-client-proxy` for reference). See `SKILL.md` and `references/bdd-and-agents.md` for the exact wording and translation table.
+Generated rules **must** include a mandatory **Rules Sync** step: any change to a rule for one agent (for example a Cursor `.mdc`) has to be mirrored to every other agent's tree (Claude `.md`, root `AGENTS.md` / `CLAUDE.md`, the `.codex/rules.md` index, etc.) in the **same** commit. The skill also recommends keeping `CLAUDE.md` as a symlink to `AGENTS.md` at repo root (see `getconf`, `getconf-ui`, `sdm-client-proxy` for reference). See `SKILL.md` and `references/bdd-and-agents.md` for the exact wording and translation table.
+
+For Codex the skill installs a ready-made hook bridge (`.codex/hooks.json` + `.codex/hooks/attach_rules.py`, copied verbatim): `alwaysApply: true` rules are injected at `SessionStart`, glob-matched rules on `PreToolUse` when a patch touches covered files - the same behavior Cursor and Claude Code provide natively. Rule bodies are **not** duplicated; the hook reads `.cursor/rules/*.mdc` directly. After install, run `/hooks` in Codex once to trust the hook.
 
 ## When to use
 
@@ -18,9 +20,10 @@ Generated rules **must** include a mandatory **Rules Sync** step: any change to 
 
 | Path | Contents |
 |------|----------|
-| `references/bdd-and-agents.md` | BDD rules meaning, Cursor vs Claude |
+| `references/bdd-and-agents.md` | BDD rules meaning, Cursor vs Claude vs Codex |
 | `references/cursor-examples/.cursor/rules/` | `.mdc` templates |
 | `references/claude-examples/.claude/` | `CLAUDE.md` + `rules/*.md` examples |
+| `references/codex-examples/.codex/` | Codex hook bridge: `hooks.json`, `hooks/attach_rules.py`, `rules.md` index template |
 
 ## Contents
 
