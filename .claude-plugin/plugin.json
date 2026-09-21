@@ -1,7 +1,7 @@
 {
   "name": "rpa-gen-rules",
   "description": "Create or refresh agent project rules (Cursor .cursor/rules/*.mdc, Claude Code CLAUDE.md and .claude/rules, Codex .codex hook bridge that auto-attaches Cursor rules by glob). Layered-cake architecture + BDD-style delivery, with a mandatory Rules Sync step that mirrors changes across every agent's rule tree. Generated rules and AGENTS.md are written in English unless the user asks for another language.",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": {
     "name": "Pavel Rykov",
     "email": "paul@drteam.rocks"
@@ -19,6 +19,5 @@
     "bdd",
     "conventions",
     "rpa"
-  ],
-  "category": "workflow"
+  ]
 }
