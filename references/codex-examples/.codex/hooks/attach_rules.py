@@ -112,7 +112,7 @@ def strip_yaml_comment(value: str) -> str:
     escaped = False
     for index, char in enumerate(value):
         if quote:
-            if char == "\\" and not escaped:
+            if char == "\\" and quote == '"' and not escaped:
                 escaped = True
                 continue
             if char == quote and not escaped:
@@ -127,10 +127,65 @@ def strip_yaml_comment(value: str) -> str:
     return value.strip()
 
 
+YAML_DOUBLE_ESCAPES = {
+    "0": "\0",
+    "a": "\x07",
+    "b": "\x08",
+    "t": "\t",
+    "n": "\n",
+    "v": "\x0b",
+    "f": "\x0c",
+    "r": "\r",
+    "e": "\x1b",
+    " ": " ",
+    '"': '"',
+    "/": "/",
+    "\\": "\\",
+    "N": "\x85",
+    "_": "\xa0",
+    "L": "\u2028",
+    "P": "\u2029",
+}
+
+
+def decode_yaml_double_quoted(value: str) -> str:
+    out: list[str] = []
+    index = 0
+    while index < len(value):
+        char = value[index]
+        if char != "\\":
+            out.append(char)
+            index += 1
+            continue
+        if index + 1 >= len(value):
+            out.append("\\")
+            break
+        escape = value[index + 1]
+        if escape in YAML_DOUBLE_ESCAPES:
+            out.append(YAML_DOUBLE_ESCAPES[escape])
+            index += 2
+            continue
+        width = {"x": 2, "u": 4, "U": 8}.get(escape)
+        if width is not None:
+            digits = value[index + 2 : index + 2 + width]
+            if len(digits) == width:
+                try:
+                    out.append(chr(int(digits, 16)))
+                    index += 2 + width
+                    continue
+                except (ValueError, OverflowError):
+                    pass
+        out.extend(("\\", escape))
+        index += 2
+    return "".join(out)
+
+
 def unquote(value: str) -> str:
     value = value.strip()
-    if len(value) >= 2 and value[0] in ("'", '"') and value[-1] == value[0]:
-        return value[1:-1]
+    if len(value) >= 2 and value[0] == '"' and value[-1] == '"':
+        return decode_yaml_double_quoted(value[1:-1])
+    if len(value) >= 2 and value[0] == "'" and value[-1] == "'":
+        return value[1:-1].replace("''", "'")
     return value
 
 
@@ -176,6 +231,62 @@ def split_globs(value: str) -> list[str]:
     return out
 
 
+def flow_sequence_complete(value: str) -> bool:
+    quote = ""
+    escaped = False
+    depth = 0
+    for char in value:
+        if quote:
+            if char == "\\" and quote == '"' and not escaped:
+                escaped = True
+                continue
+            if char == quote and not escaped:
+                quote = ""
+            escaped = False
+            continue
+        if char in ("'", '"'):
+            quote = char
+        elif char == "[":
+            depth += 1
+        elif char == "]":
+            depth = max(0, depth - 1)
+    return depth == 0
+
+
+def flow_quote_state(value: str) -> str:
+    quote = ""
+    escaped = False
+    for char in value:
+        if quote:
+            if char == "\\" and quote == '"' and not escaped:
+                escaped = True
+                continue
+            if char == quote and not escaped:
+                quote = ""
+            escaped = False
+            continue
+        if char in ("'", '"'):
+            quote = char
+    return quote
+
+
+def flow_line_continues(value: str) -> bool:
+    quote = ""
+    escaped = False
+    for char in value:
+        if quote:
+            if char == "\\" and quote == '"' and not escaped:
+                escaped = True
+                continue
+            if char == quote and not escaped:
+                quote = ""
+            escaped = False
+            continue
+        if char in ("'", '"'):
+            quote = char
+    return quote == '"' and value.endswith("\\")
+
+
 def parse_rule(path: Path) -> Rule | None:
     """Read one `.mdc` file. Frontmatter is flat, so no YAML dependency."""
     text = path.read_text(encoding="utf-8")
@@ -200,8 +311,25 @@ def parse_rule(path: Path) -> Rule | None:
         if key == "description":
             description = unquote(strip_yaml_comment(value))
         elif key == "globs":
-            if value:
-                globs = split_globs(value)
+            cleaned_value = strip_yaml_comment(value)
+            if cleaned_value.startswith("[") and not flow_sequence_complete(cleaned_value):
+                while index + 1 < len(lines):
+                    index += 1
+                    raw_continuation = lines[index].strip()
+                    continuation = (
+                        raw_continuation
+                        if flow_quote_state(cleaned_value)
+                        else strip_yaml_comment(raw_continuation)
+                    )
+                    if continuation:
+                        if flow_line_continues(cleaned_value):
+                            cleaned_value = cleaned_value[:-1] + continuation.lstrip()
+                        else:
+                            cleaned_value += " " + continuation
+                    if flow_sequence_complete(cleaned_value):
+                        break
+            if cleaned_value:
+                globs = split_globs(cleaned_value)
             else:
                 index += 1
                 while index < len(lines):
@@ -263,6 +391,15 @@ def save_sent(session_id: str, sent: set[str]) -> bool:
         return False
 
 
+def clear_sent(session_id: str) -> None:
+    if save_sent(session_id, set()):
+        return
+    try:
+        state_file(session_id).unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
 @contextmanager
 def session_lock(session_id: str):
     STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -287,21 +424,50 @@ def session_lock(session_id: str):
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
-def claim_rule_ids(session_id: str, rule_ids: set[str]) -> set[str]:
-    with session_lock(session_id):
+def deliver_rule_context(session_id: str, candidates: list[Rule], deliver) -> bool:
+    lock = session_lock(session_id)
+    try:
+        lock.__enter__()
+    except Exception:
+        if not candidates:
+            return False
+        deliver(candidates)
+        return True
+
+    try:
         sent = load_sent(session_id)
-        claimed = rule_ids - sent
-        if not claimed:
-            return set()
-        if not save_sent(session_id, sent | claimed):
-            return set()
-        return claimed
+        selected = [rule for rule in candidates if rule.rel not in sent]
+        if not selected:
+            return False
+        deliver(selected)
+        save_sent(session_id, sent | {rule.rel for rule in selected})
+        return True
+    finally:
+        lock.__exit__(*sys.exc_info())
 
 
-def update_session_state(session_id: str, source: str, always: set[str]) -> None:
-    with session_lock(session_id):
+def deliver_session_start(session_id: str, source: str, always: list[Rule], deliver) -> bool:
+    lock = session_lock(session_id)
+    try:
+        lock.__enter__()
+    except Exception:
+        if source != "resume":
+            clear_sent(session_id)
+        if not always:
+            return False
+        deliver(always)
+        return True
+
+    try:
         sent = load_sent(session_id) if source == "resume" else set()
-        save_sent(session_id, sent | always)
+        if source != "resume":
+            clear_sent(session_id)
+        if always:
+            deliver(always)
+        save_sent(session_id, sent | {rule.rel for rule in always})
+        return bool(always)
+    finally:
+        lock.__exit__(*sys.exc_info())
 
 
 def patched_paths(tool_input: object) -> list[str]:
@@ -377,26 +543,30 @@ def main() -> int:
     try:
         rules = load_rules()
     except Exception:
-        return 0
-    if not rules:
+        if event == "SessionStart" and payload.get("source", "") != "resume":
+            clear_sent(session_id)
         return 0
 
     if event == "SessionStart":
         source = payload.get("source", "")
         always = [r for r in rules if r.always]
-        update_session_state(session_id, source, {r.rel for r in always})
-        if not always:
-            return 0
-        emit(
-            event,
-            render(
-                always,
-                "Project rules for this repository, always in force."
-                " The Codex project hook attached them from `.cursor/rules/`;"
-                " no separate Codex copy is maintained. More rules are attached"
-                " automatically when you edit files they cover.",
-            ),
-        )
+
+        def deliver(selected: list[Rule]) -> None:
+            emit(
+                event,
+                render(
+                    selected,
+                    "Project rules for this repository, always in force."
+                    " The Codex project hook attached them from `.cursor/rules/`;"
+                    " no separate Codex copy is maintained. More rules are attached"
+                    " automatically when you edit files they cover.",
+                ),
+            )
+
+        deliver_session_start(session_id, source, always, deliver)
+        return 0
+
+    if not rules:
         return 0
 
     if event != "PreToolUse":
@@ -414,20 +584,22 @@ def main() -> int:
         if any(p.match(path) for path in paths for p in patterns):
             candidates.append(rule)
 
-    claimed = claim_rule_ids(session_id, {rule.rel for rule in candidates})
-    if not claimed:
+    if not candidates:
         return 0
 
-    matched = [rule for rule in candidates if rule.rel in claimed]
     touched = ", ".join(sorted(set(paths))[:8])
-    emit(
-        event,
-        render(
-            matched,
-            f"Project rules that cover the files you are editing ({touched})."
-            " Apply them to this change before continuing.",
-        ),
-    )
+
+    def deliver(matched: list[Rule]) -> None:
+        emit(
+            event,
+            render(
+                matched,
+                f"Project rules that cover the files you are editing ({touched})."
+                " Apply them to this change before continuing.",
+            ),
+        )
+
+    deliver_rule_context(session_id, candidates, deliver)
     return 0
 
 

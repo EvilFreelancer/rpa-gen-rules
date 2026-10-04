@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "1.3.3"
+EXPECTED_VERSION = "1.3.4"
 POLICY_FILES = (
     ROOT / "SKILL.md",
     ROOT / "README.md",
