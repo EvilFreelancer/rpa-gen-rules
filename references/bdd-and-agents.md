@@ -108,7 +108,9 @@ Root `AGENTS.md` is the common baseline for Codex. When the project needs its Cu
 - scoped rules whose `globs` match recognized edit paths are attached at `PreToolUse`;
 - rule bodies are not copied into a third tree.
 
-The hook parser accepts scalar, comma-separated, and YAML-list `globs`. Probe it against representative add, update, delete, and rename patch payloads before reporting support.
+The hook parser accepts scalar, flow-list and block-list `globs`, including quoted commas, blank lines and YAML comments. Probe it against representative add, update, delete and rename payloads before reporting support.
+
+State is keyed by canonical repository path and session. `resume` preserves scoped dedupe; `startup`, `compact` and `clear` reset it to the always-on set. Concurrent hook processes claim rule ids under a per-session lock and persist state with atomic replacement.
 
 This is a project adapter, not native Codex rule discovery. Its limits must remain visible:
 
