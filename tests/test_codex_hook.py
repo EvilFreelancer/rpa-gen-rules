@@ -92,45 +92,51 @@ def run_pretool(module, rules_dir: Path, state_dir: Path, tool_input: dict) -> s
     return context
 
 
-def run_concurrent_claims() -> list[list[str]]:
+def run_concurrent_deliveries() -> list[str]:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         script = root / ".codex/hooks/attach_rules.py"
         script.parent.mkdir(parents=True)
         shutil.copy2(HOOK, script)
-        start = root / "start"
-        code = (
-            "import importlib.util,json,time\n"
-            "from pathlib import Path\n"
-            f"spec=importlib.util.spec_from_file_location('adapter', {str(script)!r})\n"
-            "module=importlib.util.module_from_spec(spec)\n"
-            "spec.loader.exec_module(module)\n"
-            f"start=Path({str(start)!r})\n"
-            "while not start.exists(): time.sleep(0.001)\n"
-            "print(json.dumps(sorted(module.claim_rule_ids('shared-session', {'provider-proxy.mdc'}))))\n"
+        rules_dir = root / ".cursor/rules"
+        rules_dir.mkdir(parents=True)
+        block_rule(rules_dir)
+        payload = json.dumps(
+            {
+                "hook_event_name": "PreToolUse",
+                "session_id": "shared-session",
+                "tool_input": {"file_path": "internal/llm/openai.go"},
+            }
         )
         processes = [
             subprocess.Popen(
-                [sys.executable, "-c", code],
+                [sys.executable, str(script)],
                 cwd=root,
+                stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
             for _ in range(12)
         ]
-        start.touch()
-        results = []
+        for process in processes:
+            process.stdin.write(payload)
+            process.stdin.close()
+        outputs = []
         errors = []
         for process in processes:
-            stdout, stderr = process.communicate(timeout=15)
-            if process.returncode != 0:
+            stdout = process.stdout.read()
+            stderr = process.stderr.read()
+            returncode = process.wait(timeout=15)
+            process.stdout.close()
+            process.stderr.close()
+            if returncode != 0:
                 errors.append(stderr)
-            else:
-                results.append(json.loads(stdout))
+            elif stdout:
+                outputs.append(stdout)
         if errors:
             raise AssertionError("\n".join(errors))
-        return results
+        return outputs
 
 
 class CodexHookTest(unittest.TestCase):
@@ -200,9 +206,10 @@ class CodexHookTest(unittest.TestCase):
             self.assertNotIn("They are The", context)
             self.assertIn("The Codex project hook attached them", context)
 
-    def test_rule_claim_is_interprocess_safe(self):
-        claimed = [result for result in run_concurrent_claims() if result]
-        self.assertEqual([["provider-proxy.mdc"]], claimed)
+    def test_rule_delivery_is_interprocess_safe(self):
+        outputs = run_concurrent_deliveries()
+        self.assertEqual(1, len(outputs))
+        self.assertIn("Every provider request follows its proxy.", outputs[0])
 
 
 if __name__ == "__main__":
