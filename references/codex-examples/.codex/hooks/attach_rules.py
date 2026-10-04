@@ -13,9 +13,9 @@ files directly:
   PreToolUse   -> inject rules whose `globs` match the paths an `apply_patch`
                   call is about to touch, at most once per rule per session
 
-`.cursor/rules/` stays the single source of truth; nothing is duplicated here.
-The hook fails open: any unexpected input exits 0 with no output, so a broken
-rule file can never block an edit.
+The hook reads `.cursor/rules/` directly and creates no Codex copy of a rule body.
+It fails open: any unexpected input exits 0 with no output, so a broken rule file
+can never block an edit.
 
 Wired up in `.codex/hooks.json`. Requires `/hooks` approval in Codex once, and
 again after every change to this file (Codex tracks hooks by content hash).
@@ -42,6 +42,23 @@ STATE_DIR = Path(tempfile.gettempdir()) / (
 PATCH_FILE_RE = re.compile(r"^\*\*\*\s+(?:Add|Update|Delete)\s+File:\s*(.+?)\s*$", re.M)
 # `*** Move to: path` carries the destination of a rename
 PATCH_MOVE_RE = re.compile(r"^\*\*\*\s+Move to:\s*(.+?)\s*$", re.M)
+PATH_FIELDS = frozenset(
+    {
+        "destination",
+        "destination_path",
+        "file",
+        "file_path",
+        "fileName",
+        "filePath",
+        "new_path",
+        "notebook_path",
+        "old_path",
+        "path",
+        "paths",
+        "source",
+        "target",
+    }
+)
 
 
 class Rule:
@@ -96,17 +113,35 @@ def parse_rule(path: Path) -> Rule | None:
     body = text[end + 4 :].strip()
 
     description, globs, always = "", [], False
-    for line in head.splitlines():
+    lines = head.splitlines()
+    index = 0
+    while index < len(lines):
+        line = lines[index]
         key, sep, value = line.partition(":")
         if not sep:
+            index += 1
             continue
         key, value = key.strip(), value.strip()
         if key == "description":
             description = value
         elif key == "globs":
-            globs = [g.strip() for g in value.split(",") if g.strip()]
+            if value:
+                value = value.removeprefix("[").removesuffix("]")
+                globs = [g.strip().strip("'\"") for g in value.split(",") if g.strip()]
+            else:
+                index += 1
+                while index < len(lines):
+                    item = lines[index].strip()
+                    if not item.startswith("-"):
+                        index -= 1
+                        break
+                    pattern = item[1:].strip().strip("'\"")
+                    if pattern:
+                        globs.append(pattern)
+                    index += 1
         elif key == "alwaysApply":
             always = value.lower() == "true"
+        index += 1
     return Rule(path, description, globs, always, body)
 
 
@@ -140,31 +175,47 @@ def save_sent(session_id: str, sent: set[str]) -> None:
 
 
 def patched_paths(tool_input: object) -> list[str]:
-    """Collect repo-relative paths from an apply_patch payload."""
+    """Collect repo-relative paths from patch text and structured tool fields."""
     blobs: list[str] = []
+    structured: list[str] = []
 
-    def walk(node: object) -> None:
+    def walk(node: object, key: str = "") -> None:
         if isinstance(node, str):
             blobs.append(node)
+            if key in PATH_FIELDS:
+                structured.append(node)
         elif isinstance(node, list):
             for item in node:
-                walk(item)
+                walk(item, key)
         elif isinstance(node, dict):
-            for item in node.values():
-                walk(item)
+            for child_key, item in node.items():
+                walk(item, child_key)
+
+    def repo_relative(raw: str) -> str | None:
+        path = Path(raw)
+        if path.is_absolute():
+            try:
+                path = path.relative_to(REPO_ROOT)
+            except ValueError:
+                return None
+        else:
+            path = Path(os.path.normpath(path))
+            if path.parts and path.parts[0] == "..":
+                return None
+        return path.as_posix()
 
     walk(tool_input)
 
-    found: list[str] = []
+    candidates = list(structured)
     for blob in blobs:
-        for raw in PATCH_FILE_RE.findall(blob) + PATCH_MOVE_RE.findall(blob):
-            path = Path(raw)
-            if path.is_absolute():
-                try:
-                    path = path.relative_to(REPO_ROOT)
-                except ValueError:
-                    continue
-            found.append(path.as_posix())
+        candidates.extend(PATCH_FILE_RE.findall(blob))
+        candidates.extend(PATCH_MOVE_RE.findall(blob))
+
+    found: list[str] = []
+    for raw in candidates:
+        relative = repo_relative(raw.strip())
+        if relative and relative not in found:
+            found.append(relative)
     return found
 
 
@@ -210,9 +261,9 @@ def main() -> int:
             render(
                 always,
                 "Project rules for this repository, always in force. They are"
-                " authoritative; `.cursor/rules/` is their single source of truth."
-                " More rules are attached automatically when you edit files they"
-                " cover.",
+                " The Codex project hook attached them from `.cursor/rules/`;"
+                " no separate Codex copy is maintained. More rules are attached"
+                " automatically when you edit files they cover.",
             ),
         )
         return 0
