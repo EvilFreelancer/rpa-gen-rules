@@ -66,11 +66,11 @@ Copy or symlink this repository into a supported skill root:
 
 | Tool | Path |
 |---|---|
+| Coddy | `~/.coddy/skills/rpa-gen-rules/` |
 | Claude Code | `~/.claude/skills/rpa-gen-rules/` |
 | Cursor | `~/.cursor/skills/rpa-gen-rules/` |
 | OpenAI Codex | `~/.codex/skills/rpa-gen-rules/` |
 | Kimi Code CLI | `~/.kimi/skills/rpa-gen-rules/` |
-| Coddy | `~/.coddy/skills/rpa-gen-rules/` |
 
 The directory name must match the `name` field in `SKILL.md`.
 
