@@ -54,6 +54,12 @@ This skill is distributed through the [rpa-skills](https://github.com/EvilFreela
 /plugin install rpa-gen-rules@rpa-skills
 ```
 
+### Coddy
+
+Nothing to install. The skill ships in the standard delivery of [Coddy](https://coddy.dev):
+the first run writes it into `~/.coddy/skills/rpa-gen-rules/`, `/rpa-gen-rules` works right away, and `coddy update`
+brings a newer version of the skill with each release.
+
 ### Plain skill folder
 
 Copy or symlink this repository into a supported skill root:
@@ -64,6 +70,7 @@ Copy or symlink this repository into a supported skill root:
 | Cursor | `~/.cursor/skills/rpa-gen-rules/` |
 | OpenAI Codex | `~/.codex/skills/rpa-gen-rules/` |
 | Kimi Code CLI | `~/.kimi/skills/rpa-gen-rules/` |
+| Coddy | `~/.coddy/skills/rpa-gen-rules/` |
 
 The directory name must match the `name` field in `SKILL.md`.
 

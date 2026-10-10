@@ -8,7 +8,8 @@ or any plugin manifest.
 ## Repository layout
 
 This skill is packaged for **Claude Code**, **Cursor**, and **OpenAI Codex** (and installs as a plain
-skill folder for Kimi Code CLI and others).
+skill folder for Kimi Code CLI and others). It also ships inside **Coddy**: coddy-agent vendors it
+into its standard delivery (`make skills-vendor`, sources in `scripts/bundled-skills.json` there).
 
 ```
 rpa-gen-rules/
@@ -123,6 +124,7 @@ before committing.
 - [ ] Release mirrored into the `rpa-skills` catalog: plugin `version` and `description` in
       `.claude-plugin/marketplace.json`, `description` in `.agents/plugins/marketplace.json`,
       catalog `metadata.version` patch-bumped in both, README row when the description changed.
+- [ ] Release re-vendored into coddy-agent (`make skills-vendor`), so Coddy ships the new version.
 - [ ] Conventional commit message, e.g. `feat(rpa-gen-rules): …` / `fix(rpa-gen-rules): …`.
 
 ---
